@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import NewsArticle
+from .models import NewsArticle, Ticker, NewsArticleTicker
 from .serializer import NewsArticleSerializer
 from dateutil.parser import parse as parse_date
 
@@ -12,6 +12,7 @@ class NewsArticleListCreate(generics.ListCreateAPIView):
     GET /api/news/
     POST /api/news/
     """
+
     queryset = NewsArticle.objects.all()
     serializer_class = NewsArticleSerializer
 
@@ -23,6 +24,7 @@ class NewsArticleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     PATCH /api/news/<pk>
     DELETE /api/news/<pk>
     """
+
     queryset = NewsArticle.objects.all()
     serializer_class = NewsArticleSerializer
     lookup_field = "pk"
@@ -44,7 +46,7 @@ class CacheNewsView(APIView):
             except Exception:
                 time_published = None
 
-            NewsArticle.objects.update_or_create(
+            news_article, created = NewsArticle.objects.update_or_create(
                 url=article["url"],
                 defaults={
                     "title": article["title"],
@@ -59,4 +61,17 @@ class CacheNewsView(APIView):
                     "ticker_sentiment": article.get("ticker_sentiment", []),
                 },
             )
+
+            for t in article.get("ticker_sentiment", []):
+                symbol = t["ticker"].upper()
+                ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol)
+                NewsArticleTicker.objects.update_or_create(
+                    article=news_article,
+                    ticker=ticker_obj,
+                    defaults={
+                        "sentiment_score": float(t["ticker_sentiment_score"]),
+                        "relevance_score": float(t["relevance_score"]),
+                        "sentiment_label": t["ticker_sentiment_label"],
+                    },
+                )
         return Response({"status": "success"}, status=status.HTTP_201_CREATED)
