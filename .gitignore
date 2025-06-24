@@ -2,5 +2,7 @@
 db.sqlite3
 .env
 
+__pycache__/
+*.py[cod]
 #this is just to mock lambda behavior remove before changing to lambda
 mock_lambda_fetch.py
