@@ -1,4 +1,6 @@
 from django.db import models
+from datetime import date
+
 
 class NewsArticle(models.Model):
     title = models.CharField(max_length=500)
@@ -12,5 +14,57 @@ class NewsArticle(models.Model):
     overall_sentiment_label = models.CharField(max_length=50)
     topics = models.JSONField(null=True, blank=True)
     ticker_sentiment = models.JSONField(null=True, blank=True)
+
     def __str__(self):
         return self.title
+
+class Ticker(models.Model):
+    symbol = models.CharField(max_length=10, unique=True, blank=False, null=False)
+    longname = models.CharField(max_length=200)
+    fullExchangeName = models.CharField(max_length=10, default="UNKNOWN")
+    sector = models.CharField(max_length=100, default="UNKNOWN")
+    industry = models.CharField(
+        max_length=100, null=True, blank=True, default="UNKNOWN"
+    )
+    website = models.URLField(null=True, blank=True)
+    market_cap = models.BigIntegerField(null=True)
+    headquarters = models.CharField(max_length=100, default="UNKNOWN")
+
+    def __str__(self):
+        return self.symbol
+    
+class NewsArticleTicker(models.Model):
+    article = models.ForeignKey(NewsArticle,on_delete=models.CASCADE)
+    ticker = models.ForeignKey(Ticker,on_delete=models.CASCADE)
+    sentiment_score=models.FloatField()
+    relevance_score=models.FloatField()
+    sentiment_label=models.CharField(max_length=50)
+
+class TopGainer(models.Model):
+    ticker = models.ForeignKey(Ticker, on_delete=models.CASCADE)
+    price = models.FloatField()
+    change_amount = models.FloatField()
+    change_percentage = models.CharField(max_length=10)
+    volume = models.IntegerField()
+    last_updated = models.DateField(default=date.today)
+
+    class Meta:
+        unique_together = ("ticker", "last_updated")
+
+    def __str__(self):
+        return f"{self.ticker.symbol} gain on {self.last_updated}"
+
+
+class TopLoser(models.Model):
+    ticker = models.ForeignKey(Ticker, on_delete=models.CASCADE)
+    price = models.FloatField()
+    change_amount = models.FloatField()
+    change_percentage = models.CharField(max_length=10)
+    volume = models.IntegerField()
+    last_updated = models.DateField(default=date.today)
+
+    class Meta:
+        unique_together = ("ticker", "last_updated")
+
+    def __str__(self):
+        return f"{self.ticker.symbol} gain on {self.last_updated}"
