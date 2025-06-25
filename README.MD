@@ -1,5 +1,8 @@
 https://medium.com/@codingwitharyan/introduction-to-django-for-backend-development-2db67768ee62
 
+## Database structure
+![My SVG](./stock-senti-db.drawio.svg)
+
 ## top gainer, loser api
 https://www.alphavantage.co/query?function=TOP_GAINERS_LOSERS&apikey=demo
 
