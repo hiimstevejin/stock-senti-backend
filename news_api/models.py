@@ -20,8 +20,7 @@ class NewsArticle(models.Model):
 
 class Ticker(models.Model):
     symbol = models.CharField(max_length=10, unique=True, blank=False, null=False)
-    longname = models.CharField(max_length=200)
-    fullExchangeName = models.CharField(max_length=10, default="UNKNOWN")
+    name = models.CharField(max_length=200)
     sector = models.CharField(max_length=100, default="UNKNOWN")
     industry = models.CharField(
         max_length=100, null=True, blank=True, default="UNKNOWN"
