@@ -12,7 +12,7 @@ class NewsArticle(models.Model):
     url = models.URLField()
     overall_sentiment_score = models.FloatField()
     overall_sentiment_label = models.CharField(max_length=50)
-
+    
     def __str__(self):
         return self.title
 
@@ -33,10 +33,16 @@ class Ticker(models.Model):
 class Topic(models.Model):
     name = models.CharField(max_length=100, unique= True)
 
+    def __str__(self):
+        return self.name
+
 class NewsArticleTopic(models.Model):
     relevance_score = models.FloatField()
     article = models.ForeignKey(NewsArticle, on_delete=models.CASCADE)
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('article','topic')
 
 class NewsArticleTicker(models.Model):
     article = models.ForeignKey(NewsArticle,on_delete=models.CASCADE)
