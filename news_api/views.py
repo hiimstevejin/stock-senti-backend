@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import NewsArticle, Ticker, NewsArticleTicker
+from .models import NewsArticle, NewsArticleTopic, Ticker, NewsArticleTicker, Topic
 from .serializer import NewsArticleSerializer
 from dateutil.parser import parse as parse_date
 
@@ -57,21 +57,51 @@ class CacheNewsView(APIView):
                     "source": article["source"],
                     "overall_sentiment_score": article["overall_sentiment_score"],
                     "overall_sentiment_label": article["overall_sentiment_label"],
-                    "topics": article.get("topics", []),
-                    "ticker_sentiment": article.get("ticker_sentiment", []),
                 },
             )
 
-            for t in article.get("ticker_sentiment", []):
-                symbol = t["ticker"].upper()
-                ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol)
+            for topic_entry in article.get("topics", []):
+                topic_name = topic_entry.get("topic")
+
+                if topic_name:
+                    topic_obj, _ = Topic.objects.get_or_create(name=topic_name)
+                    try:
+                        relevance_score = float(topic_entry.get("relevance_score", 0))
+                    except (ValueError, TypeError):
+                        relevance_score = 0.0
+
+                    NewsArticleTopic.objects.update_or_create(
+                        article=news_article,
+                        topic=topic_obj,
+                        defaults={"relevance_score": relevance_score},
+                    )
+
+            for ticker_entry in article.get("ticker_sentiment", []):
+                symbol = ticker_entry.get("ticker", "").upper()
+                if not symbol:
+                    continue
+                ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol, defaults={"name": symbol})
+
+                try:
+                    sentiment_score = float(ticker_entry.get("ticker_sentiment_score", 0))
+                except (ValueError, TypeError):
+                    sentiment_score = 0.0
+
+                try:
+                    relevance_score = float(ticker_entry.get("relevance_score", 0))
+                except (ValueError, TypeError):
+                    relevance_score = 0.0
+
+                sentiment_label = ticker_entry.get("ticker_sentiment_label", "")
+
                 NewsArticleTicker.objects.update_or_create(
                     article=news_article,
                     ticker=ticker_obj,
                     defaults={
-                        "sentiment_score": float(t["ticker_sentiment_score"]),
-                        "relevance_score": float(t["relevance_score"]),
-                        "sentiment_label": t["ticker_sentiment_label"],
+                        "sentiment_score": sentiment_score,
+                        "relevance_score": relevance_score,
+                        "sentiment_label": sentiment_label,
                     },
                 )
+
         return Response({"status": "success"}, status=status.HTTP_201_CREATED)
