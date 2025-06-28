@@ -1,8 +1,10 @@
-from django.shortcuts import render
+from datetime import date
+from django.db import IntegrityError
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import NewsArticle, NewsArticleTopic, Ticker, NewsArticleTicker, Topic
+from news_api.permissions import HasInternalAPIKey
+from .models import NewsArticle, NewsArticleTopic, Ticker, NewsArticleTicker, TopGainer, TopLoser, Topic
 from .serializer import NewsArticleSerializer
 from dateutil.parser import parse as parse_date
 
@@ -15,7 +17,10 @@ class NewsArticleListCreate(generics.ListCreateAPIView):
 
     queryset = NewsArticle.objects.all()
     serializer_class = NewsArticleSerializer
-
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [HasInternalAPIKey()]
+        return super().get_permissions()
 
 class NewsArticleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -29,13 +34,18 @@ class NewsArticleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = NewsArticleSerializer
     lookup_field = "pk"
 
+    def get_permissions(self):
+        if self.request.method in ["PUT", "PATCH", "DELETE"]:
+            return [HasInternalAPIKey()]
+        return super().get_permissions()
 
 class CacheNewsView(APIView):
     """
     POST api/news/cache-article/
     api endpoint to receive fetched data from aws Lambda via news api
     """
-
+    permission_classes = [HasInternalAPIKey] 
+    
     def post(self, request):
         data = request.data
         articles = data.get("feed", [])
@@ -80,10 +90,14 @@ class CacheNewsView(APIView):
                 symbol = ticker_entry.get("ticker", "").upper()
                 if not symbol:
                     continue
-                ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol, defaults={"name": symbol})
+                ticker_obj, _ = Ticker.objects.get_or_create(
+                    symbol=symbol, defaults={"name": symbol}
+                )
 
                 try:
-                    sentiment_score = float(ticker_entry.get("ticker_sentiment_score", 0))
+                    sentiment_score = float(
+                        ticker_entry.get("ticker_sentiment_score", 0)
+                    )
                 except (ValueError, TypeError):
                     sentiment_score = 0.0
 
@@ -105,3 +119,72 @@ class CacheNewsView(APIView):
                 )
 
         return Response({"status": "success"}, status=status.HTTP_201_CREATED)
+
+
+class CacheTopMoversView(APIView):
+    """
+    POST /api/top-movers
+    Accepts top_gainers and top_losers from news_api
+    """
+
+    permission_classes = [HasInternalAPIKey] 
+
+    def post(self, request):
+        data = request.data
+        top_gainers = data.get("top_gainers", [])
+        top_losers = data.get("top_losers", [])
+        last_updated = data.get("last_updated", "").split(" ")[0:2]
+
+        inserted_gainers = 0
+        inserted_losers = 0
+
+        for gainer in top_gainers:
+            symbol = gainer.get("ticker", "").upper()
+            if not symbol:
+                continue
+
+            ticker_obj, _ = Ticker.objects.get_or_create(
+                symbol=symbol, defaults={"name": symbol}
+            )
+
+            try:
+                TopGainer.objects.create(
+                    ticker=ticker_obj,
+                    price=float(gainer.get("price", 0)),
+                    change_amount=float(gainer.get("change_amount", 0)),
+                    change_percentage=gainer.get("change_percentage", "0%"),
+                    volume=int(gainer.get("volume", 0)),
+                    last_updated=last_updated,
+                )
+                inserted_gainers += 1
+            except IntegrityError:
+                continue  
+
+        for loser in top_losers:
+            symbol = loser.get("ticker", "").upper()
+            if not symbol:
+                continue
+
+            ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol, defaults={"name": symbol})
+
+            try:
+                TopLoser.objects.create(
+                    ticker=ticker_obj,
+                    price=float(loser.get("price", 0)),
+                    change_amount=float(loser.get("change_amount", 0)),
+                    change_percentage=loser.get("change_percentage", "0%"),
+                    volume=int(loser.get("volume", 0)),
+                    last_updated=last_updated,
+                )
+                inserted_losers += 1
+            except IntegrityError:
+                continue  
+
+        return Response(
+            {
+                "status": "success",
+                "inserted_gainers": inserted_gainers,
+                "inserted_losers": inserted_losers,
+            },
+            status=status.HTTP_201_CREATED,
+        )
