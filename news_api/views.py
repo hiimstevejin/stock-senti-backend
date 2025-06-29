@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from django.db import IntegrityError
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -133,7 +133,8 @@ class CacheTopMoversView(APIView):
         data = request.data
         top_gainers = data.get("top_gainers", [])
         top_losers = data.get("top_losers", [])
-        last_updated = data.get("last_updated", "").split(" ")[0:2]
+        last_updated_date_str = data.get("last_updated", "").split(" ")[0]
+        last_updated = datetime.strptime(last_updated_date_str, "%Y-%m-%d").date()
 
         inserted_gainers = 0
         inserted_losers = 0
@@ -157,7 +158,8 @@ class CacheTopMoversView(APIView):
                     last_updated=last_updated,
                 )
                 inserted_gainers += 1
-            except IntegrityError:
+            except IntegrityError as e:
+                print(f"Failed to insert {symbol} on {last_updated}: {str(e)}")
                 continue  
 
         for loser in top_losers:
@@ -177,7 +179,8 @@ class CacheTopMoversView(APIView):
                     last_updated=last_updated,
                 )
                 inserted_losers += 1
-            except IntegrityError:
+            except IntegrityError as e:
+                print(f"Failed to insert {symbol} on {last_updated}: {str(e)}")
                 continue  
 
         return Response(

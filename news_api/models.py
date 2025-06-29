@@ -57,7 +57,7 @@ class TopGainer(models.Model):
     change_amount = models.FloatField()
     change_percentage = models.CharField(max_length=10)
     volume = models.IntegerField()
-    last_updated = models.DateTimeField()
+    last_updated = models.DateField()
 
     class Meta:
         unique_together = ("ticker", "last_updated")
@@ -72,7 +72,7 @@ class TopLoser(models.Model):
     change_amount = models.FloatField()
     change_percentage = models.CharField(max_length=10)
     volume = models.IntegerField()
-    last_updated = models.DateTimeField()
+    last_updated = models.DateField()
 
     class Meta:
         unique_together = ("ticker", "last_updated")
