@@ -1,11 +1,12 @@
 from datetime import datetime
 from django.db import IntegrityError
+from django.db.models import Max
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from news_api.permissions import HasInternalAPIKey
 from .models import NewsArticle, NewsArticleTopic, Ticker, NewsArticleTicker, TopGainer, TopLoser, Topic
-from .serializer import NewsArticleSerializer
+from .serializer import NewsArticleSerializer, TopGainerSerializer, TopLoserSerializer
 from dateutil.parser import parse as parse_date
 
 
@@ -39,6 +40,26 @@ class NewsArticleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
             return [HasInternalAPIKey()]
         return super().get_permissions()
 
+class TopMoversLatestView(APIView):
+    """
+    GET /api/news/top-movers-latest
+    Returns top gainers and losers for the most recent date
+    """
+
+    def get(self, request):
+        latest_gainer_date = TopGainer.objects.aggregate(Max('last_updated'))['last_updated__max']
+        latest_loser_date = TopLoser.objects.aggregate(Max('last_updated'))['last_updated__max']
+        latest_date = max(filter(None, [latest_gainer_date, latest_loser_date]))
+
+        top_gainers = TopGainer.objects.filter(last_updated=latest_date)
+        top_losers = TopLoser.objects.filter(last_updated=latest_date)
+
+        return Response({
+            "date": latest_date,
+            "top_gainers": TopGainerSerializer(top_gainers, many=True).data,
+            "top_losers": TopLoserSerializer(top_losers, many=True).data,
+        })
+    
 class CacheNewsView(APIView):
     """
     POST api/news/cache-article/

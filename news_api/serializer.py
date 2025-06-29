@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import NewsArticle, NewsArticleTopic, NewsArticleTicker
+from .models import (
+    NewsArticle,
+    NewsArticleTopic,
+    NewsArticleTicker,
+    TopGainer,
+    TopLoser,
+)
 
 
 class NewsArticleSerializer(serializers.ModelSerializer):
@@ -41,4 +47,34 @@ class NewsArticleSerializer(serializers.ModelSerializer):
                 "sentiment_label": nt.sentiment_label,
             }
             for nt in obj.newsarticleticker_set.select_related("ticker").all()
+        ]
+
+
+class TopGainerSerializer(serializers.ModelSerializer):
+    ticker_symbol = serializers.CharField(source="ticker.symbol")
+
+    class Meta:
+        model = TopGainer
+        fields = [
+            "ticker_symbol",
+            "price",
+            "change_amount",
+            "change_percentage",
+            "volume",
+            "last_updated",
+        ]
+
+
+class TopLoserSerializer(serializers.ModelSerializer):
+    ticker_symbol = serializers.CharField(source="ticker.symbol")
+
+    class Meta:
+        model = TopLoser
+        fields = [
+            "ticker_symbol",
+            "price",
+            "change_amount",
+            "change_percentage",
+            "volume",
+            "last_updated",
         ]
