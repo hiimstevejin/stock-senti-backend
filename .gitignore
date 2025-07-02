@@ -1,2 +1,9 @@
 /venv
 db.sqlite3
+
+.env
+mock_lambda_fetch.py
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
