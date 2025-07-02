@@ -40,9 +40,31 @@ class NewsArticleRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
             return [HasInternalAPIKey()]
         return super().get_permissions()
 
+class LatestNewsArticlesView(APIView):
+    """
+    GET /api/news/latest/
+    Returns all NewsArticles published on the most recent date
+    """
+    def get(self, request):
+        # Find the max datetime in time_published
+        latest_datetime = NewsArticle.objects.aggregate(Max("time_published"))["time_published__max"]
+        if not latest_datetime:
+            return Response({"news": []}, status=status.HTTP_200_OK)
+
+        # Extract the date portion (ignore time)
+        latest_date = latest_datetime.date()
+
+        # Filter articles published on that date (ignoring time)
+        articles = NewsArticle.objects.filter(
+            time_published__date=latest_date
+        ).order_by("-time_published")  # optional ordering newest first
+
+        serializer = NewsArticleSerializer(articles, many=True)
+        return Response({"date": latest_date, "news": serializer.data}, status=status.HTTP_200_OK)
+    
 class TopMoversLatestView(APIView):
     """
-    GET /api/news/top-movers-latest
+    GET /api/news/topmovers-latest
     Returns top gainers and losers for the most recent date
     """
 
