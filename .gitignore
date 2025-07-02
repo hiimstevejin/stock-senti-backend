@@ -1,5 +1,6 @@
 /venv
 db.sqlite3
+<<<<<<< HEAD
 
 .env
 mock_lambda_fetch.py
@@ -7,3 +8,11 @@ mock_lambda_fetch.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+=======
+.env
+
+__pycache__/
+*.py[cod]
+#this is just to mock lambda behavior remove before changing to lambda
+mock_lambda_fetch.py
+>>>>>>> aa368f50142cce979019da88d79b7f94124e0ae4
