@@ -30,7 +30,7 @@ INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['stocke-senti-backend.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
