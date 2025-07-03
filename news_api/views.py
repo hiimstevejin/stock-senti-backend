@@ -71,7 +71,16 @@ class TopMoversLatestView(APIView):
     def get(self, request):
         latest_gainer_date = TopGainer.objects.aggregate(Max('last_updated'))['last_updated__max']
         latest_loser_date = TopLoser.objects.aggregate(Max('last_updated'))['last_updated__max']
-        latest_date = max(filter(None, [latest_gainer_date, latest_loser_date]))
+        
+        valid_dates = list(filter(None, [latest_gainer_date, latest_loser_date]))
+
+        if not valid_dates:
+            return Response(
+                {"detail": "No data available."},
+                status=status.HTTP_200_OK
+            )
+
+        latest_date = max(valid_dates)
 
         top_gainers = TopGainer.objects.filter(last_updated=latest_date)
         top_losers = TopLoser.objects.filter(last_updated=latest_date)
