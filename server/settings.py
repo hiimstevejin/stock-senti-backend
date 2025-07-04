@@ -55,6 +55,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# CORS_ALLOWED_ORIGINS = [
+#     "https://stock-senti.vercel.app/",
+# ]
+
 ROOT_URLCONF = 'server.urls'
 
 TEMPLATES = [
