@@ -47,7 +47,7 @@ INSTALLED_APPS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://stock-senti.vercel.app/",
+    "https://stock-senti.vercel.app",
 ]
 
 MIDDLEWARE = [
