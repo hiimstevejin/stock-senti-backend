@@ -2,6 +2,7 @@ from datetime import datetime
 from django.db import IntegrityError
 from django.db.models import Max
 from django.utils import timezone
+from django.utils.timezone import localtime
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -47,21 +48,25 @@ class LatestNewsArticlesView(APIView):
     Returns all NewsArticles published on the most recent date
     """
     def get(self, request):
-        # Find the max datetime in time_published
+        # Get the datetime of the most recently published article
         latest_datetime = NewsArticle.objects.aggregate(Max("time_published"))["time_published__max"]
+
         if not latest_datetime:
             return Response({"news": []}, status=status.HTTP_200_OK)
 
-        # Extract the date portion (ignore time)
-        latest_date = latest_datetime.date()
+        # Convert to local time zone before extracting date
+        local_latest = localtime(latest_datetime)
+        latest_date = local_latest.date()
 
-        # Filter articles published on that date (ignoring time)
         articles = NewsArticle.objects.filter(
             time_published__date=latest_date
-        ).order_by("-time_published")  # optional ordering newest first
+        ).order_by("-time_published")
 
         serializer = NewsArticleSerializer(articles, many=True)
-        return Response({"date": latest_date, "news": serializer.data}, status=status.HTTP_200_OK)
+        return Response({
+            "latest_date": str(latest_date),
+            "news": serializer.data
+        }, status=status.HTTP_200_OK)
     
 class TopMoversLatestView(APIView):
     """
