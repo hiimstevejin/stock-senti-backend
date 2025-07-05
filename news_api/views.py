@@ -1,6 +1,7 @@
 from datetime import datetime
 from django.db import IntegrityError
 from django.db.models import Max
+from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -105,6 +106,8 @@ class CacheNewsView(APIView):
         for article in articles:
             try:
                 time_published = parse_date(article["time_published"])
+                if time_published and timezone.is_naive(time_published):
+                    time_published = timezone.make_aware(time_published)
             except Exception:
                 time_published = None
             try:
