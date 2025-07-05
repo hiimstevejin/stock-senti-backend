@@ -107,20 +107,23 @@ class CacheNewsView(APIView):
                 time_published = parse_date(article["time_published"])
             except Exception:
                 time_published = None
-
-            news_article, created = NewsArticle.objects.update_or_create(
-                url=article["url"],
-                defaults={
-                    "title": article["title"],
-                    "time_published": time_published,
-                    "authors": article.get("authors", []),
-                    "summary": article["summary"],
-                    "banner_image": article["banner_image"],
-                    "source": article["source"],
-                    "overall_sentiment_score": article["overall_sentiment_score"],
-                    "overall_sentiment_label": article["overall_sentiment_label"],
-                },
-            )
+            try:
+                news_article, created = NewsArticle.objects.update_or_create(
+                    url=article["url"],
+                    defaults={
+                        "title": article["title"],
+                        "time_published": time_published,
+                        "authors": article.get("authors", []),
+                        "summary": article["summary"],
+                        "banner_image": article["banner_image"],
+                        "source": article["source"],
+                        "overall_sentiment_score": article["overall_sentiment_score"],
+                        "overall_sentiment_label": article["overall_sentiment_label"],
+                    },
+                )
+            except Exception as e:
+                print(f"Failed to insert article '{article.get('title')}' — {str(e)}")
+                continue
 
             for topic_entry in article.get("topics", []):
                 topic_name = topic_entry.get("topic")
@@ -201,7 +204,7 @@ class CacheTopMoversView(APIView):
             )
 
             try:
-                TopGainer.objects.create(
+                TopGainer.objects.update_or_create(
                     ticker=ticker_obj,
                     price=float(gainer.get("price", 0)),
                     change_amount=float(gainer.get("change_amount", 0)),
@@ -222,7 +225,7 @@ class CacheTopMoversView(APIView):
             ticker_obj, _ = Ticker.objects.get_or_create(symbol=symbol, defaults={"name": symbol})
 
             try:
-                TopLoser.objects.create(
+                TopLoser.objects.update_or_create(
                     ticker=ticker_obj,
                     price=float(loser.get("price", 0)),
                     change_amount=float(loser.get("change_amount", 0)),
